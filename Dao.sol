@@ -74,8 +74,35 @@ struct Proposal{
       proposal.votes += shares[msg.sender];
   }
 
+  function executeProposal(uint proposalId) external onlyAdmin(){
+       Proposal storage proposal = proposals[proposalId];
+       require(block.timestamp >= proposal.end,"Cannot execue proposal befor end Date");
+       require(proposal.executed == false ,"cannot execute proposal already executed");
+       require((proposal.votes / totalShares) * 100 >= quorum,"cannot execute a proposal with votes below quorum");
+       _transferEther(proposal.amount,proposal.recipient);
+  }
+
+  function withdrawEther(uint amount,address payable to)external onlyAdmin(){
+      _transferEther( amount, to);
+  }
+
+  fallback() external payable{
+      availableFunds += msg.value;
+  }
+
+  function _transferEther(uint amount, address payable to) internal{
+      require(amount <= availableFunds,"Not enough availabale funds");
+      availableFunds -= amount;
+      to.transfer(amount);
+  }
+
   modifier onlyInvestors(){
       require(investors[msg.sender] == true,"Only Investors");
+      _;
+  }
+
+  modifier onlyAdmin(){
+      require(msg.sender == admin,"Only Admin");
       _;
   }
 }
